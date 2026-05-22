@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beg na Tabli - Neon Edition</title>
+    <!-- Moderni font za Neon izgled -->
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Ekran za Prijavu i Lobi -->
+    <div id="lobbyScreen" class="screen-container">
+        <div class="lobby-box glass-panel">
+            <h1 class="neon-text-pink">BEG NA TABLI</h1>
+            <h2 class="neon-text-blue">MULTIPLAYER BETA</h2>
+            
+            <div id="loginForm">
+                <input type="text" id="playerNameInput" placeholder="Unesi svoje ime" maxlength="15">
+                <button id="joinBtn" class="neon-btn-pink">PRIDRUŽI SE SOBI</button>
+                <div id="errorMessage" class="error-text"></div>
+            </div>
+            <div id="waitingRoom" class="hidden">
+                <h3 class="neon-text-blue" style="margin-bottom: 15px;">Igrači u sobi:</h3>
+                <ul id="playersList" class="players-list">
+                    <!-- Dinamička lista igrača -->
+                </ul>
+                <div class="loader"></div>
+                <p id="lobbyStatusMessage" class="status-message">Čekamo ostale igrače...</p>
+            </div>
+        </div>
+    </div>
+    <!-- Glavni ekran Igre -->
+    <div id="gameScreen" class="game-container hidden">
+        <!-- Odeljak sa tablom -->
+        <div class="board-section">
+            <div class="board" id="board">
+                <!-- Polja se generišu preko JS-a -->
+            </div>
+            <div class="center-status glass-panel" id="centerStatus">
+                <!-- Statusi igrača će se ovde popuniti -->
+            </div>
+        </div>
+        <!-- Odeljak sa pitanjima i kontrolama -->
+        <div class="ui-section">
+            <div id="gameHeader">
+                <h1 class="neon-text-pink" style="margin-bottom: 10px;">RUNDA U TOKU</h1>
+                <p id="spectatorMsg" class="error-text hidden blink">POJEDEN SI! SADA SAMO POSMATRAŠ.</p>
+            </div>
+            <div id="quizContainer" class="hidden glass-panel quiz-panel">
+                <div class="round-info">
+                    <div class="timer neon-text-blue">VREME: <span id="timeLeft">15</span>s</div>
+                </div>
+                <div id="questionText" class="question-text">Pitanje se učitava...</div>
+                <div id="answersGrid" class="answers-grid">
+                    <button class="answer-btn neon-btn-blue" id="ans0"></button>
+                    <button class="answer-btn neon-btn-blue" id="ans1"></button>
+                    <button class="answer-btn neon-btn-blue" id="ans2"></button>
+                    <button class="answer-btn neon-btn-blue" id="ans3"></button>
+                </div>
+                <div id="feedbackText" class="feedback"></div>
+            </div>
+            <div id="animationStatus" class="hidden glass-panel text-center">
+                <h2 id="animTitle" class="neon-text-pink">OBRADA REZULTATA...</h2>
+                <p id="animMsg" style="font-size: 1.2rem; margin-top: 10px;">Gledaj pomeranje figurica na tabli!</p>
+            </div>
+            
+            <div id="gameOverScreen" class="hidden glass-panel text-center">
+                <h1 id="winnerName" class="neon-text-green" style="font-size: 3rem; margin-bottom: 30px;">POBEDNIK</h1>
+                <button class="neon-btn-pink" onclick="location.reload()">IGRAJ PONOVO</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Povezivanje Socket.io klijenta -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client.js"></script>
+</body>
+</html>

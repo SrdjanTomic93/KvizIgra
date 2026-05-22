@@ -1,0 +1,381 @@
+/* GLOBALNI STILOVI */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Rajdhani', sans-serif;
+    letter-spacing: 1px;
+}
+
+body {
+    background-color: #050505;
+    background-image: radial-gradient(circle at center, #111a22 0%, #020202 100%);
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.error-text {
+    color: #ff003c;
+    font-weight: bold;
+    margin-top: 10px;
+    text-shadow: 0 0 8px #ff003c;
+}
+
+.status-message {
+    color: #00f3ff;
+    font-style: italic;
+    margin-top: 20px;
+    font-size: 1.2rem;
+}
+
+.blink {
+    animation: blinker 1.5s linear infinite;
+}
+
+@keyframes blinker {
+    50% {
+        opacity: 0.3;
+    }
+}
+
+/* NEON EFEKTI */
+.neon-text-pink {
+    color: #ff00ea;
+    text-shadow: 0 0 5px #ff00ea, 0 0 20px #ff00ea;
+}
+
+.neon-text-blue {
+    color: #00f3ff;
+    text-shadow: 0 0 5px #00f3ff, 0 0 20px #00f3ff;
+}
+
+.neon-text-green {
+    color: #39ff14;
+    text-shadow: 0 0 5px #39ff14, 0 0 20px #39ff14;
+}
+
+.glass-panel {
+    background: rgba(10, 15, 30, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 243, 255, 0.2);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(0, 243, 255, 0.05);
+    border-radius: 15px;
+    padding: 30px;
+}
+
+/* DUGMIĆI */
+.neon-btn-pink,
+.neon-btn-blue {
+    background: transparent;
+    padding: 15px 30px;
+    font-size: 1.3rem;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+}
+
+.neon-btn-pink {
+    color: #ff00ea;
+    border: 2px solid #ff00ea;
+    box-shadow: 0 0 10px #ff00ea, inset 0 0 10px #ff00ea;
+}
+
+.neon-btn-pink:hover {
+    background: #ff00ea;
+    color: #000;
+    box-shadow: 0 0 30px #ff00ea, inset 0 0 10px #ff00ea;
+}
+
+.neon-btn-blue {
+    color: #00f3ff;
+    border: 2px solid #00f3ff;
+    box-shadow: 0 0 10px #00f3ff, inset 0 0 10px #00f3ff;
+}
+
+.neon-btn-blue:hover {
+    background: #00f3ff;
+    color: #000;
+    box-shadow: 0 0 30px #00f3ff, inset 0 0 10px #00f3ff;
+}
+
+.neon-btn-blue:disabled {
+    border-color: #555;
+    color: #555;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+/* LOBI EKRAN */
+.screen-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.lobby-box {
+    text-align: center;
+    min-width: 450px;
+}
+
+.lobby-box h1 {
+    font-size: 3rem;
+}
+
+#playerNameInput {
+    width: 100%;
+    padding: 15px;
+    font-size: 1.3rem;
+    border-radius: 5px;
+    border: 2px solid #00f3ff;
+    background: rgba(0, 0, 0, 0.5);
+    color: #00f3ff;
+    margin-bottom: 25px;
+    text-align: center;
+    outline: none;
+}
+
+#playerNameInput:focus {
+    box-shadow: 0 0 15px #00f3ff;
+}
+
+.players-list {
+    list-style: none;
+    text-align: left;
+    margin-bottom: 20px;
+}
+
+.players-list li {
+    padding: 12px;
+    background: rgba(0, 243, 255, 0.1);
+    border-left: 4px solid #ff00ea;
+    margin-bottom: 8px;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+}
+
+.color-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 15px;
+    box-shadow: 0 0 10px currentColor;
+}
+
+/* ANIMACIJA UČITAVANJA U LOBIJU */
+.loader {
+    border: 4px solid rgba(0, 243, 255, 0.1);
+    border-top: 4px solid #00f3ff;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* GAME EKRAN */
+.game-container {
+    display: flex;
+    width: 95vw;
+    max-width: 1300px;
+    height: 85vh;
+}
+
+.board-section {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+/* TABLA STILOVI */
+.board {
+    position: relative;
+    width: 450px;
+    height: 450px;
+    border-radius: 50%;
+    border: 1px dashed rgba(0, 243, 255, 0.3);
+}
+
+.field {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 50%;
+    border: 2px solid #00f3ff;
+    box-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+    top: 50%;
+    left: 50%;
+    margin-top: -15px;
+    margin-left: -15px;
+}
+
+.field.start-point {
+    border-color: #ff00ea;
+    box-shadow: 0 0 15px #ff00ea;
+    background: rgba(255, 0, 234, 0.1);
+}
+
+.player-piece {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    margin-top: -12px;
+    margin-left: -12px;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 10;
+    border: 2px solid #fff;
+}
+
+.player-piece.eliminated {
+    display: none;
+}
+
+.center-status {
+    position: absolute;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border: 2px solid rgba(255, 0, 234, 0.3);
+}
+
+.player-info {
+    font-weight: bold;
+    margin: 4px 0;
+    font-size: 1.1rem;
+    text-shadow: 0 0 5px currentColor;
+}
+
+.player-info.dead {
+    text-decoration: line-through;
+    opacity: 0.3;
+}
+
+/* KVIZ SEKCIJA */
+.ui-section {
+    flex: 1.2;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.quiz-panel {
+    padding: 40px;
+}
+
+.round-info {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+}
+
+.question-text {
+    font-size: 1.8rem;
+    margin-bottom: 40px;
+    min-height: 100px;
+    text-align: center;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+.answers-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.answer-btn.selected {
+    background: #00f3ff;
+    color: #000;
+}
+
+.answer-btn.correct {
+    background: #39ff14 !important;
+    color: #000;
+    border-color: #39ff14;
+    box-shadow: 0 0 20px #39ff14;
+}
+
+.answer-btn.wrong {
+    background: #ff003c !important;
+    color: #fff;
+    border-color: #ff003c;
+    box-shadow: 0 0 20px #ff003c;
+}
+
+.feedback {
+    margin-top: 30px;
+    text-align: center;
+    font-size: 1.4rem;
+    font-weight: bold;
+    min-height: 35px;
+}
+
+/* MOBILNI DIZAJN */
+@media (max-width: 900px) {
+    body {
+        align-items: flex-start;
+        overflow-y: auto;
+    }
+
+    .game-container {
+        flex-direction: column;
+        height: auto;
+        padding-bottom: 50px;
+    }
+
+    .board-section {
+        min-height: 380px;
+        margin-top: 20px;
+    }
+
+    .board {
+        transform: scale(0.65);
+    }
+
+    .answers-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .quiz-panel {
+        padding: 20px;
+    }
+}
