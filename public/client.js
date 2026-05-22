@@ -139,8 +139,6 @@ function startLocalTimer(seconds) {
 
 socket.on('round_results', (data) => {
     clearInterval(localTimer);
-    quizContainer.classList.add('hidden');
-    animationStatus.classList.remove('hidden');
     
     // ----- BOJENJE DUGMADI (NOVI DEO) -----
     if (data.playerResults && data.correctAnswerIndex !== undefined) {
@@ -157,29 +155,43 @@ socket.on('round_results', (data) => {
                 btn.classList.add('wrong');
             }
         });
+
+        if (myResult && myResult.correct) {
+            feedbackTextEl.innerText = "TAČAN ODGOVOR!";
+            feedbackTextEl.className = 'feedback neon-text-green';
+        } else if (myResult && !myResult.correct) {
+            feedbackTextEl.innerText = "POGREŠAN ODGOVOR!";
+            feedbackTextEl.className = 'feedback error-text';
+        }
     }
     // ----- KRAJ NOVOG DELA -----
-    
-    animTitle.innerText = "REZULTATI!";
-    animTitle.className = "neon-text-blue";
-    animMsg.innerHTML = "POMERANJE FIGURICA...<br>";
-    
-    data.players.forEach(p => {
-        if (p.id === myPlayerId) {
-            amIActive = p.active;
-        }
-        updatePiecePosition(p);
-    });
-    
-    updateCenterStatus(data.players);
-    
-    if (data.eliminatedMessages.length > 0) {
-        animTitle.innerText = "NEKO JE POJEDEN!";
-        animTitle.className = "neon-text-pink blink";
-        data.eliminatedMessages.forEach(msg => {
-            animMsg.innerHTML += `<br><strong style="color:#ff003c; text-shadow: 0 0 10px #ff003c">${msg}</strong>`;
+
+    // Čekamo 3 sekunde da igrači vide boje pre nego što sakrijemo kviz
+    setTimeout(() => {
+        quizContainer.classList.add('hidden');
+        animationStatus.classList.remove('hidden');
+        
+        animTitle.innerText = "REZULTATI!";
+        animTitle.className = "neon-text-blue";
+        animMsg.innerHTML = "POMERANJE FIGURICA...<br>";
+        
+        data.players.forEach(p => {
+            if (p.id === myPlayerId) {
+                amIActive = p.active;
+            }
+            updatePiecePosition(p);
         });
-    }
+        
+        updateCenterStatus(data.players);
+        
+        if (data.eliminatedMessages.length > 0) {
+            animTitle.innerText = "NEKO JE POJEDEN!";
+            animTitle.className = "neon-text-pink blink";
+            data.eliminatedMessages.forEach(msg => {
+                animMsg.innerHTML += `<br><strong style="color:#ff003c; text-shadow: 0 0 10px #ff003c">${msg}</strong>`;
+            });
+        }
+    }, 3000);
 });
 
 socket.on('game_over', (data) => {

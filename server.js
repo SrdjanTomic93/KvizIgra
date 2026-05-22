@@ -358,7 +358,7 @@ function processRoundResults() {
         return;
     }
     
-    setTimeout(sendNextQuestion, 5000);
+    setTimeout(sendNextQuestion, 8000);
 }
 // Provera da li ima živih ljudi u igri
 function checkForHumanPlayers() {
