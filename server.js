@@ -352,7 +352,24 @@ function processRoundResults() {
     
     setTimeout(sendNextQuestion, 5000);
 }
+// Provera da li ima živih ljudi u igri
+function checkForHumanPlayers() {
+    const humanPlayers = gameState.players.filter(p => !p.isBot && p.connected);
+    if (humanPlayers.length === 0 && gameState.status === 'playing') {
+        // Nema ljudi, resetuj igru
+        clearTimeout(gameState.roundTimer);
+        gameState.status = 'lobby';
+        gameState.players = [];
+        gameState.currentQuestionIndex = -1;
+        gameState.answersReceivedThisRound = 0;
+        gameState.usedQuestions = [];
+        console.log('Igra resetovana - nema ljudskih igrača');
+        io.emit('game_reset', 'Igra je resetovana jer su svi igrači napustili.');
+    }
+}
 
+// Proveri svakih 5 minuta
+setInterval(checkForHumanPlayers, 300000);
 
 // Socket.IO događaji
 io.on('connection', (socket) => {
