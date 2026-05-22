@@ -62,8 +62,8 @@ const questions = [
     {q: "Tvorac Talicnog Toma je ?", answers: ["Moris", "Kobe", "Fransao", "Eduard"], correct: 0 },
     {q: "Smrt u Veneciji je napisao?", answers: ["Herman Hese", "Vladimir Pistalo", "Tomas Man", "Agata Kristi"], correct: 2 },
     {q: "U kom veku je živela Jovanka Orleanka?", answers: ["13. vek", "14. vek", "15. vek", "16. vek"], correct: 2 },
-    {q: "Koji je glavni grad Čilea?", answers: ["Santjago", "La Paz", "Lima", "Bogota"], correct: 0 }
-    {q: "Teofilo Kubiljas je najbolji fudbaler u istoriji koje zemlje ?", answers: ["Perua", "Meksika", "Kostarike", "Paragvaja"], correct: 0 },
+    {q: "Koji je glavni grad Čilea?", answers: ["Santjago", "La Paz", "Lima", "Bogota"], correct: 0 },
+    
     {q: "Od cijeg mleka se pravi kumis?", answers: ["kravljeg", "kamiljeg", "kozijeg", "kobiljeg"], correct: 3 },
     { q: "Koji je glavni grad Kambodže?", answers: ["Hanoj", "Vijentijan", "Pnom Pen", "Bangkok"], correct: 2 }, 
     { q: "Koliko elektrona ima atom ugljenika u neutralnom stanju?", answers: ["4", "6", "8", "12"], correct: 1 },
