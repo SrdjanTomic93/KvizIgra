@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
@@ -9,228 +10,61 @@ const io = new Server(server);
 
 // Služimo statičke fajlove iz 'public' foldera
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json());
 
-// Baza probnih pitanja
-const questions = [
+// Poveži se na MongoDB
+const MONGO_URI = 'mongodb+srv://SrkiTomic93:Dekadeka93@cluster0.zeyuaxo.mongodb.net/?appName=Cluster0';
+
+mongoose.connect(MONGO_URI)
+  .then(() => {
+      console.log('Povezan na MongoDB');
+      seedDatabase(); // Proveravamo i punimo bazu ako je prazna
+  })
+  .catch(err => console.error('Greška pri povezivanju:', err));
+
+// Šema za pitanje
+const questionSchema = new mongoose.Schema({
+    q: String,
+    answers: [String],
+    correct: Number,
+    category: { type: String, default: 'opsta_kultura' }
+});
+
+const Question = mongoose.model('Question', questionSchema);
+
+// Fallback pitanja (koriste se za prvo punjenje baze)
+const fallbackQuestions = [
     {q: "Ko je napisao 'Proces'?", answers: ["Franc Kafka", "Herman Hese", "Tomas Man", "Robert Muzil"], correct: 0 },
     {q: "Šta je Pitagorina teorema?", answers: ["a² + b² = c²", "E = mc²", "F = ma", "V = IR"], correct: 0 },
     {q: "Koji je glavni grad Toga?", answers:  ["Abidžan", "Lome", "Najrobi", "Kinsaša"], correct: 1 },
     {q: "Osnivac stoicizma je ?", answers: ["Zenon", "Platon", "Niče", "Arhimed"], correct: 0 },
-    { q: "Koji element je najzastupljeniji u Zemljinoj atmosferi?", answers: ["Kiseonik", "Ugljen-dioksid", "Azot", "Vodonik"], correct: 2 },
+    {q: "Koji element je najzastupljeniji u Zemljinoj atmosferi?", answers: ["Kiseonik", "Ugljen-dioksid", "Azot", "Vodonik"], correct: 2 },
     {q: "Roman Dorucak kod Tifanija je pisao", answers: ["Bred Iston", "Truman Kapote", "Tes Geritsen", "Tomas Haris"], correct: 1 },
     {q: "Kolliko godina je trajao stogodisnji rat?", answers: ["116", "118", "87", "105"], correct: 0},
     {q: "Povrsinski gledano najmanja drzava Azije je ?", answers: ["Sri Lanka", "Singapur", "Brunej", "Maldivi"], correct: 3},
-    { q: "Koji je najveći sisar na planeti?", answers: ["Afrički slon", "Plavi kit", "Žirafa", "Kit ajkula"], correct: 1 },
-    { q: "Koliko ima nula u broju milion?", answers: ["3", "4", "5", "6"], correct: 3 },
+    {q: "Koji je najveći sisar na planeti?", answers: ["Afrički slon", "Plavi kit", "Žirafa", "Kit ajkula"], correct: 1 },
+    {q: "Koliko ima nula u broju milion?", answers: ["3", "4", "5", "6"], correct: 3 },
     {q: "Medju rimski car od ponudjenih ne spada u tkz.dobre", answers: ["Nerva", "Trajan", "Hadrijan", "Konstantin"], correct: 3},
     {q: "Koji je glavni grad Nikaragve?", answers: ["Managva", "Asonsion", "Port taun", "Tegucigalpa"], correct: 0 },
     {q: "Koje godine je rodjen pisac Danilo Kiš?", answers: ["1925", "1935", "1945", "1955"], correct: 1 },
     {q: "Ko je napisao 'Stranca'?", answers: ["Žan-Pol Sartr", "Alber Kami", "Simon de Bovoar", "Marsel Prust"], correct: 1 },
-    {q: "Merna jedinica za magnetni fluks je?", answers: ["Veber", "Henri", "Tesla", "Kulon"], correct: 0 },
-    {q: "Ko je autor 'Države'?", answers: ["Aristotel", "Sokrat", "Platon", "Seneka"], correct: 2 },
-    { q: "Ko je prvi predložio teoriju evolucije prirodnom selekcijom (zajedno sa Darvinom)?", answers: ["Žan-Batist Lamark", "Alfred Rasel Volas", "Tomas Maltus", "Čarls Lajel"], correct: 1 },
-    {q: "Koliko iznosi molarna masa vode (H₂O)?", answers: ["16 g/mol", "18 g/mol", "20 g/mol", "22 g/mol"], correct: 1 },
-    {q: "Ko je bio kralj Franaka i prvi car Svetog rimskog carstva?", answers: ["Klodvig", "Karlo Martel", "Karlo Veliki", "Fridrih Barbarosa"], correct: 2 },
-    {q: "Koja je najmanja kost u ljudskom telu?", answers: ["Čekić", "Nakovanj", "Uzengija", "Puž"], correct: 2 },
-    {q: "Koji je glavni grad Tanzanije?", answers: ["Najrobi", "Dodoma", "Kampala", "Kigali"], correct: 1 },
-    {q: "Ko je otkrio strukturu DNK?", answers: ["Darvin i Volas", "Mendel i Morgan", "Votson i Krik", "Paster i Koh"], correct: 2 },
-    {q: "Koje godine je počela Francuska revolucija?", answers: ["1776", "1789", "1799", "1804"], correct: 1 },
-    {q: "Šta je 'kogito ergo sum' na srpskom?", answers: ["Znam da ništa ne znam", "Mislim, dakle postojim", "Sve je broj", "Biti ili ne biti"], correct: 1 },
-    {q: "Koji je drugi najveći kontinent na svetu?", answers: ["Severna Amerika", "Južna Amerika", "Afrika", "Azija"], correct: 2 },
-    {q: "Koji je glavni grad Kanade?", answers: ["Toronto", "Vankuver", "Montreal", "Otava"], correct: 3 },
-    {q: "Nama najbliza zvezda posle sunca je ?", answers: ["Proksima Kentauri", "Berndova zvezda ", "Vajs", "B-192"], correct: 0 },
-    {q: "Tim koji je osvojio fudbalsko prvenstovo Jugoslavije za sezonu 1970/1971?", answers: ["Partizan", "Dinamo Zagreb", "Hajduk Split", "Vojvodina"], correct: 2},
-    {q: "Koji je najbrži sisar na svetu?", answers: ["Lav", "Antilopa", "Gepard", "Konj"], correct: 2 },
-    {q: "Koji je najviši planinski vrh Afrike?", answers: ["Atlas", "Drakensberg", "Kilimandžaro", "Kenija"], correct: 2 },
-    {q: "Šta je predstavlja Hablova konstanta?", answers: ["Masu crne rupe", "Starost univerzuma", "Brzinu širenja svemira", "Gustinu tamne materije"], correct: 2 },
-    {q: "Koliko traje mandat američkog senatora?", answers: ["2 godine", "4 godine", "6 godina", "8 godina"], correct: 2 },
-    {q: "Šta je glavna funkcija mitohondrija u ćeliji?", answers: ["Sinteza proteina", "Skladištenje masti", "Proizvodnja ATP-a", "Razgradnja otrova"], correct: 2 },
-    {q: "Koji naučnik je predložio heliocentrični model Sunčevog sistema?", answers: ["Ptolomej", "Kopernik", "Galilej", "Kepler"], correct: 1 },
-    {q: "Ko je autor knjige 'Kratka istorija vremena'?", answers: ["Ričard Fajnman", "Karl Segan", "Stiven Hoking", "Nil Degras Tajson"], correct: 2 },
-    {q: "Koji je glavni grad Ekvadora?", answers: ["Bogota", "Karakas", "Limu", "Kito"], correct: 3 },
-    {q: "Koliko ima kraljeva u standardnom špilu karata?", answers: ["2", "3", "4", "6"], correct: 2 },
-    {q: "Koliko ima bajtova u jednom megabajtu (tehnički tačno)?", answers: ["1000", "1024", "1048576", "1000000"], correct: 2 },
-    {q: "Ko je naslikao 'Rođenje Venere'?", answers: ["Leonardo", "Mikelandjelo", "Botičeli", "Rafael"], correct: 2 },
-    {q: "Koji je glavni grad Slovenije?", answers: ["Zagreb", "Sarajevo", "Ljubljana", "Podgorica"], correct: 2 },
-    {q: "Koji naučnik je predložio heliocentrični model Sunčevog sistema?", answers: ["Ptolomej", "Kopernik", "Galilej", "Kepler"], correct: 1 },
-    {q: "Koliko amandmana ima Ustav SAD (uključujući prvih deset Povelje o pravima)?", answers: ["10", "17", "27", "33"], correct: 2 },
-    { q: "Ko je komponovao 'Mesečevu sonatu'?", answers: ["Mocart", "Bach", "Betoven", "Brams"], correct: 2 },
-    { q: "Ko je naslikao Mona Lizu?", answers: ["Pikaso", "Van Gog", "Leonardo da Vinči", "Mikelanđelo"], correct: 2 },
-    {q: "Ko je napisao 'Zov divljine'?", answers: ["Ernest Hemingvej", "Džek London", "Mark Tven", "Herman Melvil"], correct: 1 },
-    {q: "Koji je najgušći element u prirodi?", answers: ["Olovo", "Zlato", "Platina", "Osmijum"], correct: 3 },
-    {q: "U kojoj zemlji se nalazi regija Flandrija?", answers: ["Holandija", "Luksemburg", "Belgija", "Nemačka"], correct: 2 },
-    {q: "Tvorac Talicnog Toma je ?", answers: ["Moris", "Kobe", "Fransao", "Eduard"], correct: 0 },
-    {q: "Smrt u Veneciji je napisao?", answers: ["Herman Hese", "Vladimir Pistalo", "Tomas Man", "Agata Kristi"], correct: 2 },
-    {q: "U kom veku je živela Jovanka Orleanka?", answers: ["13. vek", "14. vek", "15. vek", "16. vek"], correct: 2 },
-    {q: "Koji je glavni grad Čilea?", answers: ["Santjago", "La Paz", "Lima", "Bogota"], correct: 0 },
-    { q: "Koje godine je izbila Kratka skupština u Engleskoj?", answers: ["1628", "1640", "1642", "1653"], correct: 1 },
-    { q: "Koji je glavni grad Surinama?", answers: ["Paramaribo", "Džordžtaun", "Kajena", "Bridžtaun"], correct: 0 },
-    { q: "Ko je autor 'Fenomenologije duha'?", answers: ["Kant", "Fihte", "Hegel", "Šeling"], correct: 2 },
-    { q: "Koliko simfonija je komponovao Žan Sibelijus?", answers: ["5", "7", "9", "12"], correct: 1 },
-    { q: "Koji je hemijski simbol za volfram?", answers: ["V", "W", "T", "Tu"], correct: 1 },
-    { q: "Na kojoj reci leži grad Firenca?", answers: ["Tibar", "Po", "Arno", "Adige"], correct: 2 },
-    { q: "Koje godine je potpisan Vestfalski mir?", answers: ["1618", "1635", "1648", "1659"], correct: 2 },
-    { q: "Ko je napisao 'Logičko-filozofski traktat'?", answers: ["Bertrand Rasel", "Rudolf Karnap", "Ludvig Vitgenštajn", "Gotlob Frege"], correct: 2 },
-    { q: "Šta je Džejms Klerk Maksvel ujedinio svojim jednačinama?", answers: ["Gravitaciju i svetlost", "Elektricitet i magnetizam", "Prostor i vreme", "Masu i energiju"], correct: 1 },
-    { q: "U kojoj zemlji se nalazi regija Patagonija?", answers: ["Brazil i Urugvaj", "Čile i Argentina", "Peru i Bolivija", "Kolumbija i Ekvador"], correct: 1 },
-    { q: "Ko je bio poslednji vizantijski car?", answers: ["Justinijan I", "Konstantin XI Paleolog", "Vasilije II Bugaroubica", "Aleksije I Komnin"], correct: 1 }, 
-  { q: "Koliko iznosi Plankova konstanta (red veličine u J·s)?", answers: ["10⁻²⁰", "10⁻²⁴", "10⁻³⁴", "10⁻⁴⁰"], correct: 2 },
- { q: "Ko je autor romana 'Doktor Faustus'?", answers: ["Herman Hese", "Tomas Man", "Franc Kafka", "Robert Muzil"], correct: 1 },
- { q: "Koji faraon je izgradio Abu Simbel?", answers: ["Ramzes II", "Tutankamon", "Ehnaton", "Hatshepsut"], correct: 0 },
- { q: "Koji je glavni grad Butana?", answers: ["Katmandu", "Timpu", "Naypyidaw", "Daka"], correct: 1 },
-{ q: "Šta je 'Dama sa hermelinom'?", answers: ["Skulptura Mikelanđela", "Slika Leonarda da Vinčija", "Mozartova opera", "Rembrantova slika"], correct: 1 },
- { q: "Ko je otkrio princip Arhimedovog zavrtnja?", answers: ["Arhimed", "Pitagora", "Euklid", "Aristotel"], correct: 0 },
- { q: "Koje godine je osnovano Kraljevstvo Srba, Hrvata i Slovenaca?", answers: ["1914", "1918", "1919", "1921"], correct: 1 },
- { q: "Koji je najmanji element u periodnom sistemu?", answers: ["Vodonik", "Helijum", "Litijum", "Berilijum"], correct: 0 },
- { q: "Ko je napisao 'Smrt u Veneciji'?", answers: ["Herman Hese", "Tomas Man", "Franc Kafka", "Stefan Cvajg"], correct: 1 },
- { q: "U kojoj galaksiji se nalazi naš Sunčev sistem?", answers: ["Andromeda", "Mlečni put", "Magelanov oblak", "Sombrero"], correct: 1 },
- { q: "Ko je bio lider pokreta 'Nesvrstani' uz Tita?", answers: ["Indira Gandi", "Gamal Abdel Naser", "Džavaharlal Nehru", "Hajle Selasije"], correct: 2 },
- { q: "Šta je 'ogdoade' u egipatskoj mitologiji?", answers: ["Knjiga mrtvih", "Grupa od osam prvobitnih bogova", "Faraonova grobnica", "Sveti skarabej"], correct: 1 },
- { q: "Koji je glavni grad Surinama?", answers: ["Paramaribo", "Kajena", "Bridžtaun", "Džordžtaun"], correct: 0 },
- { q: "Ko je naslikao 'Vrisak'?", answers: ["Gustav Klimt", "Edvard Munk", "Egon Šile", "Vasilij Kandinski"], correct: 1 },
- { q: "Koliko atoma ima u molekulu glukoze (C₆H₁₂O₆)?", answers: ["12", "18", "24", "36"], correct: 2 },
- { q: "Koji je najviši planinski vrh u Evropi (po većini definicija granice kontinenata)?", answers: ["Mon Blan", "Elbrus", "Dufour", "Materhorn"], correct: 1 },
- { q: "Ko je autor 'Tragedije čoveka'?", answers: ["Šandor Petefi", "Imre Madač", "Endre Adi", "Atila Jožef"], correct: 1 },
- { q: "Koje godine je izbila Bokserska pobuna u Kini?", answers: ["1898", "1900", "1905", "1911"], correct: 1 },
- { q: "Šta je Sokratov metod?", answers: ["Posmatranje prirode", "Dijalektička rasprava pitanjima", "Matematičko dokazivanje", "Meditacija"], correct: 1 },
- { q: "Koji je najgušći gas?", answers: ["Radon", "Ksenon", "Kripton", "Argon"], correct: 0 },
- { q: "Ko je osvojio Zlatnu palmu 2023. godine?", answers: ["Džim Džarmuš", "Nuri Bilge Džejlan", "Žistin Trije", "Aki Kaurismaki"], correct: 2 },
- { q: "Koliko traje period poluraspada ugljenika-14?", answers: ["oko 1.500 godina", "oko 5.730 godina", "oko 12.000 godina", "oko 50.000 godina"], correct: 1 },
- { q: "Ko je napisao 'Šagrenovu kožu'?", answers: ["Viktor Igo", "Onore de Balzak", "Stendal", "Gistav Flober"], correct: 1 },
- { q: "U kojoj bici je poginuo kralj Harold II 1066. godine?", answers: ["Bici kod Azinkura", "Bici kod Krešija", "Bici kod Hejstingsa", "Bici kod Poatjea"], correct: 2 },
- { q: "Koji je glavni grad Kirgistana?", answers: ["Almati", "Taškent", "Dušanbe", "Biškek"], correct: 3 },
- { q: "Šta su 'Bozoni' u fizici?", answers: ["Čestice materije", "Prenosioci sila", "Antičestice", "Tamna materija"], correct: 1 },
- { q: "Ko je režirao 'Sati'?", answers: ["Virdžinija Vulf", "Stiven Daldri", "Dejvid Linč", "Piter Džekson"], correct: 1 },
- { q: "Koliko stepeni ima u pravom uglu?", answers: ["45", "60", "90", "120"], correct: 2 },
- { q: "Ko je autor 'Hvalisavog ratnika' (Miles Gloriosus)?", answers: ["Terentius", "Plaut", "Seneka", "Plutarh"], correct: 1 },
- { q: "Koji je najduži autoput u Srbiji (trenutno)?", answers: ["A1", "A2", "A3", "A4"], correct: 0 },
- { q: "Šta je 'entropija'?", answers: ["Mera količine energije", "Mera nereda u sistemu", "Mera brzine svetlosti", "Mera gravitacije"], correct: 1 },
- { q: "Ko je napisao 'Besnilo'?", answers: ["Borislav Pekić", "Danilo Kiš", "Milorad Pavić", "Aleksandar Tišma"], correct: 0 },
- { q: "Koji je glavni grad Belizea?", answers: ["Belmopan", "Gvatemala", "San Salvador", "Tegusigalpa"], correct: 0 },
- { q: "Koliko traje jedan siderički mesec?", answers: ["oko 27,3 dana", "oko 28,5 dana", "oko 29,5 dana", "oko 30 dana"], correct: 0 },
- { q: "Ko je komponovao 'Sliku sa izložbe'?", answers: ["Petar Iljič Čajkovski", "Modest Musorgski", "Sergej Rahmanjinov", "Mihail Glinka"], correct: 1 },
- { q: "U kojoj državi se nalazi Silicijumska dolina?", answers: ["Teksas", "Njujork", "Kalifornija", "Vašington"], correct: 2 },
- { q: "Koji je hemijski simbol za zlato?", answers: ["Zl", "Go", "Au", "Ag"], correct: 2 },
- { q: "Ko je autor 'Slike Dorijana Greja'?", answers: ["Džejms Džojs", "Oskar Vajld", "Džordž Bernard Šo", "H.Dž. Vels"], correct: 1 }
-    {q: "Od cijeg mleka se pravi kumis?", answers: ["kravljeg", "kamiljeg", "kozijeg", "kobiljeg"], correct: 3 },
-    { q: "Koji je glavni grad Kambodže?", answers: ["Hanoj", "Vijentijan", "Pnom Pen", "Bangkok"], correct: 2 }, 
-    { q: "Koliko elektrona ima atom ugljenika u neutralnom stanju?", answers: ["4", "6", "8", "12"], correct: 1 },
-    { q: "Ko je bio prvi predsednik Južne Afrike posle aparthejda?", answers: ["Stiv Biko", "Nelson Mandela", "F. V. de Klerk", "Tabo Mbeki"], correct: 1 },
-    { q: "Koje godine je potpisano primirje u Prvom svetskom ratu?", answers: ["1916", "1917", "1918", "1919"], correct: 2 },
-    { q: "Koji je najdublji okeanski rov na svetu?", answers: ["Portorikanski", "Javanski", "Marijanski", "Tonga"], correct: 2 },
-    { q: "Koji filozof je autor 'Kritike čistog uma'?", answers: ["Hjum", "Lok", "Kant", "Berkli"], correct: 2 },
-    { q: "Šta je glavna jedinica nasleđivanja?", answers: ["Hromozom", "Protein", "Gen", "Ribozom"], correct: 2 },
-    {q: "Kosinus ugla od 90 stepeni iznosi?", answers: ["0", "1", "beskonacno", "1/2"], correct: 0 },
-    {q: "Kakve pesme je najvise pevala Vasilija Radojcic?", answers: ["narodne", "pop", "džez", "bluz"], correct: 0 },
-    {q: "Koja od sestara Bronte je napisala roman Džejn Ejr?", answers: ["Šarlota", "Emili", "Ana", "nijedna"], correct: 0 },
-    {q: "Kojoj porodici biljaka pripada kleka, glavni sastojak klekovače?", answers: ["bukava", "borova", "čempresa", "ruža"], correct: 2 },
-    {q: "Roman Stepski vuk je napisao?", answers: ["Tomas Man", "Ljorka", "Ivo Andrić", "Herman Hese"], correct: 3 },
-    {q: "Ko je bio prvi predsednik Praviteljstvujuščeg sovjeta serbskog?", answers: ["prota M.Nenadović", "Jakov Nenadović", "Karađorđe Petrović", "Branko Radičević"], correct: 0 },
-    {q: "Po kom piću je popularno nazvana revolucija u Vojvodini 1988.godine?", answers: ["vinjaku", "bozi", "jogurtu", "čaju"], correct: 2 },
-    { q: "Koja je najmanja država na svetu?", answers: ["Monako", "Vatikan", "San Marino", "Lihtenštajn"], correct: 1 },
-    {q: "Koja reka se pominje u pesmi Sanja, grupe Alisa?", answers: ["Dunav", "Sava", "Morava", "Amazon"], correct: 0 },
-    {q: "Za koji roman je Ernest Hemingvej 1953.godine dobio Pulicerovu nagradu?", answers: ["Za kim zvono zvoni", "Zbogom oružje", "Starac i more", "Snegovi Kilimandžara"], correct: 2 },
-    {q: "Koji grad je domaćin manifestacije Mokranjčevi dani?", answers: ["Sombor", "Negotin", "Zaječar", "Požarevac"], correct: 1 },
-    {q: "U kom veku je Henri Osmi vladao Engleskom?", answers: ["14.vek", "15.vek", "16.vek", "17.vek"], correct: 2 },
-    {q: "U kojoj ulici živi Banamen?", answers: ["Akacija", "Bejker", "Visterija Lejn", "nema ulicu"], correct: 0 },
-    {q: "Koja obala Australije izlazi na Veliki australijski zaliv?", answers: ["južna", "istočna", "zapadna", "severna"], correct: 0 },
-    {q: "Koja planeta je najbliža Suncu?", answers: ["Venera", "Merkur", "Zemlja", "Mars"], correct: 1 },
-    {q: "Ko je napisao 'Na Drini ćuprija'?", answers: ["Ivo Andrić", "Miloš Crnjanski", "Meša Selimović", "Dobrica Ćosić"], correct: 0 },
-    {q: "Koji je najviši vrh na svetu?", answers: ["K2", "Mont Blan", "Kilimandžaro", "Mont Everest"], correct: 3 },
-    {q: "Od čega se pravi staklo?", answers: ["Kamena", "Peska", "Drveta", "Plastike"], correct: 1 },
-    { q: "Džeki Iks je proslavljeni?", answers: ["glumac", "automobilista", "ulični umetnik", "stilista"], correct: 1 },
-    { q: "U kojom od navedenih filmova ne glumi Hemfri Bogart?", answers: ["Kazablanka", "Blago Sijera Madre", "Afrička kraljica", "Pozovi M radi ubistva"], correct: 3 },
-    { q: "U kom filmu ne glumi Odri Hebert?", answers: ["Sabrina", "Doručak kod Tifanija", "Praznik u Rimu", "Desilo se jedne noći"], correct: 3 },
-    { q: "Koji gas udišemo da bismo preživeli?", answers: ["Ugljen-dioksid", "Azot", "Helijum", "Kiseonik"], correct: 3 },
-    { q: "Koje ime dele glumici Selek,Skerit i Berindžer?", answers: ["Tom", "Sem", "Džim", "Džon"], correct: 0 },
-    { q: "Koja Verdijeva opera je zasnovana na romanu Dama s kamelijama?", answers: ["Trubadur", "Travijata", "Rigoleto", "Nabuko"], correct: 1 },
-    { q: "Mrtve duše je napisao?", answers: ["Tolstoj", "Dostojevski", "Bulgarski", "Gogolj"], correct: 3 },
-    { q: "Vajfertovu pivaru vezujemo za koji grad?", answers: ["Pančevo", "Apatin", "Negotin", "Čelarevo"], correct: 0 },
-    { q: "Prvu biografiju Vuka Karađžića napisao je?", answers: ["Ljubomir Stojanović", "Izmail Sreznjevski", "Miodrag Popović", "Branko Radičević"], correct: 1 },
-    { q: "Vakslerova skala se koristi za merenje ?", answers: ["stepena zagađenosti vazduha", "stope razvoda brakova", "vazdušnog pritiska", "koeficijenta inteligencije"], correct: 3 },
-    { q: "15 procenata od 350?", answers: ["48.5", "52.5", "57.5", "62"], correct: 1 },
-    { q: "Tajnu večeru je naslikao ?", answers: ["Da Vinči", "Mikelanđelo", "Karavađo", "Rafaelo"], correct: 0 },
-    { q: "pesmu Kad spavaš sam izvodi?", answers: ["Bajaga", "Yu grupa", "Kerber", "Smak"], correct: 3 },
-    { q: "Ko je autor 'Uspona i pada Rimskog carstva'?", answers: ["Edvard Gibon", "Arnold Tojnbi", "Herodot", "Plutarh"], correct: 0 },
-    { q: "Šta je glavna funkcija mitohondrija u ćeliji?", answers: ["Sinteza proteina", "Skladištenje masti", "Proizvodnja ATP-a", "Razgradnja otrova"], correct: 2 },
-    { q: "Ko je naslikao 'Guernicu'?", answers: ["Salvador Dali", "Hoan Miro", "Pablo Pikaso", "Francisko Goja"], correct: 2 },
-    { q: "Koliko iznosi brzina svetlosti u vakuumu (približno)?", answers: ["300.000 km/h", "300.000 km/s", "3.000.000 km/s", "30.000 km/s"], correct: 1 },
-    { q: "Koji je glavni grad Letonije?", answers: ["Viljnus", "Talin", "Riga", "Helsinki"], correct: 2 },
-        { q: "Ko je napisao 'Kritiku moći suđenja'?", answers: ["Hegel", "Kant", "Šopenhauer", "Hjum"], correct: 1 },
- { q: "Koji je glavni grad Namibije?", answers: ["Vindhuk", "Gaborone", "Lusaka", "Harare"], correct: 0 },
- { q: "Šta je 'katabaza' u književnosti?", answers: ["Vrhunac radnje", "Silazak u podzemni svet", "Uvodna pesma", "Junakovo preobraženje"], correct: 1 },
- { q: "Koji je najveći glečer u Evropi (po zapremini)?", answers: ["Justedalsbreen", "Vatnajokutl", "Aletš", "Svartisen"], correct: 1 },
- { q: "Koje godine je završen Kip slobode?", answers: ["1876", "1884", "1886", "1892"], correct: 2 },
- { q: "Ko je autor 'Septembarske kantate'?", answers: ["Vasko Popa", "Stevan Raičković", "Miodrag Pavlović", "Jovan Hristić"], correct: 2 },
- { q: "Koliko iznosi molarna masa ugljen-dioksida (CO₂)?", answers: ["28 g/mol", "36 g/mol", "44 g/mol", "52 g/mol"], correct: 2 },
- { q: "Koji rimski car je doneo Milanski edikt 313. godine?", answers: ["Dioklecijan", "Konstantin Veliki", "Teodosije", "Julijan"], correct: 1 },
- { q: "Ko je režirao 'Osmi pečat'?", answers: ["Federiko Felini", "Akira Kurosava", "Ingmar Bergman", "Luis Bunjuel"], correct: 2 },
- { q: "Koji je glavni grad Salvadora?", answers: ["Tegusigalpa", "San Salvador", "Managva", "Gvatemala"], correct: 1 },
- { q: "Šta je 'hipostaza' u hrišćanskoj teologiji?", answers: ["Molitva", "Suština ili ličnost", "Krštenje", "Ispovest"], correct: 1 },
- { q: "Ko je otkrio krvne grupe ABO sistema?", answers: ["Aleksandar Fleming", "Karl Landštajner", "Robert Koh", "Luj Paster"], correct: 1 },
- { q: "Koji je najdublji kanjon u Evropi?", answers: ["Verdon", "Tara", "Samarija", "Vikos"], correct: 1 },
- { q: "Ko je napisao 'Hazarski rečnik'?", answers: ["Danilo Kiš", "Milorad Pavić", "Borislav Pekić", "Miloš Crnjanski"], correct: 1 },
- { q: "Koje godine je izbila Tridesetogodišnji rat?", answers: ["1618", "1620", "1630", "1642"], correct: 0 },
- { q: "Šta je 'Šredingerova mačka'?", answers: ["Biološki paradoks", "Misaoni eksperiment u kvantnoj fizici", "Zagonetka iz grčke mitologije", "Logička greška"], correct: 1 },
- { q: "Koji je glavni grad Tadžikistana?", answers: ["Almati", "Biškek", "Taškent", "Dušanbe"], correct: 3 },
- { q: "Ko je komponovao 'Karmina Burana'?", answers: ["Karl Orf", "Rihard Vagner", "Johan Sebastijan Bah", "Jozef Hajdn"], correct: 0 },
- { q: "Koja je najmanja država Afrike?", answers: ["Lesoto", "Svazilend", "Gambija", "Sejšeli"], correct: 2 },
- { q: "Ko je autor 'Seobe'?", answers: ["Ivo Andrić", "Miloš Crnjanski", "Isidora Sekulić", "Bora Stanković"], correct: 1 },
- { q: "Koliko ima baznih parova u ljudskom genomu (približno)?", answers: ["100 miliona", "300 miliona", "3 milijarde", "10 milijardi"], correct: 2 },
- { q: "Koji je glavni grad Obale Slonovače?", answers: ["Abidžan", "Jamuskuro", "Lome", "Akra"], correct: 1 },
- { q: "Ko je naslikao 'Olimpiju' (1863)?", answers: ["Gistav Kurbe", "Eduar Mane", "Klod Mone", "Ogist Renoar"], correct: 1 },
- { q: "Šta je 'aubada' u muzici?", answers: ["Večernja pesma", "Jutarnja pesma", "Pogrebna pesma", "Venčana pesma"], correct: 1 },
- { q: "Koje godine je ukinut feudalizam u Srbiji (Sretenjski ustav)?", answers: ["1815", "1830", "1835", "1844"], correct: 2 },
- { q: "Koji je najveći asteroid u asteroidnom pojasu?", answers: ["Vesta", "Palas", "Higieja", "Ceres"], correct: 3 },
- { q: "Ko je napisao 'Ostrvo'?", answers: ["Oldos Haksli", "Džordž Orvel", "Vilijam Golding", "Artur Klark"], correct: 0 },
- { q: "Koji je glavni grad Nepala?", answers: ["Katmandu", "Timpu", "Nju Delhi", "Daka"], correct: 0 },
- { q: "Šta je Lajbnicova monada?", answers: ["Matematička funkcija", "Nedeljiva duhovna supstanca", "Politička jedinica", "Astronomska pojava"], correct: 1 },
- { q: "Ko je otkrio Tahitanski arhipelag (za Evropljane)?", answers: ["Džejms Kuk", "Semjuel Volis", "Luj-Antoan de Bugenvil", "Ferdinand Magelan"], correct: 1 }
-    { q: "Ako bi bilo koji pozitivan broj stepenovali sa nulom dobili bi?", answers: ["0", "1", "vrednost tog broja", "beskonačno"], correct: 1},
-    { q: "Koji je najveći okean na svetu?", answers: ["Atlantski", "Indijski", "Tihi", "Južni"], correct: 2 },
-    { q: "Ko je napisao 'Zločin i kazna'?", answers: ["Lav Tolstoj", "Fjodor Dostojevski", "Nikolaj Gogolj", "Ivan Turgenjev"], correct: 1 },
-    { q: "Koji hemijski element ima simbol 'O'?", answers: ["Osmijum", "Kiseonik", "Olovo", "Oganeson"], correct: 1 },
-    { q: "Koliko ima minuta u jednom danu?", answers: ["1440", "1240", "1640", "1340"], correct: 0 },
-    { q: "Koja je najveća pustinja na svetu?", answers: ["Sahara", "Gobi", "Antarktička", "Kalahari"], correct: 2 },
-    { q: "Ko je naslikao 'Zvezdanu noć'?", answers: ["Pikaso", "Rembrant", "Van Gog", "Mone"], correct: 2 },
-    { q: "Koji je najduži rečni sistem na svetu?", answers: ["Nil", "Amazon", "Jangce", "Misisipi"], correct: 0 },
-    { q: "U kojoj godini je pao Berlinski zid?", answers: ["1987", "1988", "1989", "1990"], correct: 2 },
-    { q: "Koji vitamin se dobija od sunčeve svetlosti?", answers: ["Vitamin A", "Vitamin C", "Vitamin D", "Vitamin B12"], correct: 2 },
-    { q: "Koji je najmanji kontinent?", answers: ["Evropa", "Južna Amerika", "Antarktik", "Australija"], correct: 3 },
-    { q: "Ko je bio prvi predsednik SAD?", answers: ["Tomas Džeferson", "Abraham Linkoln", "Džordž Vašington", "Bendžamin Frenklin"], correct: 2 },
-    { q: "Koliko ima sekundi u jednom satu?", answers: ["360", "3600", "60", "600"], correct: 1 },
-    { q: "Koji je najviši vodopad na svetu?", answers: ["Viktorijini", "Nijagarini", "Anđeoski", "Iguasu"], correct: 2 },
-    { q: "Koji grčki bog je bio vladar podzemlja?", answers: ["Zevs", "Posejdon", "Had", "Ares"], correct: 2 },
-    { q: "Koji je hemijski simbol za srebro?", answers: ["S", "Sr", "Si", "Ag"], correct: 3 },
-    { q: "U kojoj zemlji se nalazi Maču Pikču?", answers: ["Kolumbija", "Peru", "Brazil", "Argentina"], correct: 1 },
-    { q: "Ko je otkrio penicilin?", answers: ["Luj Paster", "Robert Koh", "Aleksandar Fleming", "Hauard Floraj"], correct: 2 },
-    { q: "Koliko ima dana u redovnoj godini?", answers: ["364", "365", "366", "360"], correct: 1 },
-    { q: "Kako se zove najveća kost u ljudskom telu?", answers: ["Lobanja", "Karlica", "Butna kost", "Rebro"], correct: 2 },
-    { q: "Koji je glavni grad Grčke?", answers: ["Solun", "Larisa", "Atina", "Patra"], correct: 2 },
-    { q: "Ko je napisao 'Gordost i predrasude'?", answers: ["Šarlota Bronte", "Emili Bronte", "Džejn Ostin", "Virdžinija Vulf"], correct: 2 },
-    { q: "Koji je najbrži sisar na svetu?", answers: ["Lav", "Antilopa", "Gepard", "Konj"], correct: 2 },
-    { q: "Koliko iznosi broj π (pi) zaokružen na dve decimale?", answers: ["3.12", "3.14", "3.16", "3.18"], correct: 1 },
-    { q: "Koja zemlja je poznata kao 'Zemlja hiljadu jezera'?", answers: ["Švedska", "Norveška", "Finska", "Kanada"], correct: 2 },
-    { q: "Ko je bio otac psihoanalize?", answers: ["Karl Jung", "Alfred Adler", "Ivan Pavlov", "Sigmund Frojd"], correct: 3 },
-    { q: "Koji je najveći sisar na planeti?", answers: ["Afrički slon", "Plavi kit", "Žirafa", "Kit ajkula"], correct: 1 },
-    { q: "Koliko ima nula u broju milion?", answers: ["3", "4", "5", "6"], correct: 3 },
-    { q: "Koji je glavni grad Australije?", answers: ["Sidnej", "Melburn", "Kambera", "Pert"], correct: 2 },
-    { q: "Koja je najmanja država na svetu?", answers: ["Monako", "Vatikan", "San Marino", "Lihtenštajn"], correct: 1 },
-    { q: "Ko je napisao 'Ilijadu' i 'Odiseju'?", answers: ["Sofokle", "Homer", "Euripid", "Aristotel"], correct: 1 },
-    { q: "Koji element je najzastupljeniji u Zemljinoj atmosferi?", answers: ["Kiseonik", "Ugljen-dioksid", "Azot", "Vodonik"], correct: 2 },
-    { q: "Koliko ima dana u februaru tokom prestupne godine?", answers: ["28", "29", "30", "31"], correct: 1 },
-    { q: "Koja je najveća životinja na kopnu?", answers: ["Nosorog", "Nilski konj", "Afrički slon", "Polarni medved"], correct: 2 },
-    { q: "Ko je bio poslednji faraon Egipta?", answers: ["Ramzes II", "Tutankamon", "Kleopatra", "Nefertiti"], correct: 2 },
-    { q: "Koliko sati traje jedan dan na Zemlji?", answers: ["12", "18", "24", "36"], correct: 2 },
-    { q: "Koji je glavni grad Italije?", answers: ["Napulj", "Milano", "Firenca", "Rim"], correct: 3 },
-    { q: "Kako se zove proces kojim biljke prave hranu?", answers: ["Disanje", "Fotosinteza", "Fermentacija", "Oksidacija"], correct: 1 },
-    { q: "Koji je najmanji organ u ljudskom telu?", answers: ["Bubreg", "Slezina", "Epifiza", "Žučna kesa"], correct: 2 },
-    { q: "Koliko ima kontinenata na Zemlji?", answers: ["5", "6", "7", "8"], correct: 2 },
-    { q: "Koji je glavni grad Mađarske?", answers: ["Prag", "Beč", "Varšava", "Budimpešta"], correct: 3 },
-    { q: "Koji sport se igra na Vimbldonu?", answers: ["Fudbal", "Kriket", "Tenis", "Golf"], correct: 2 },
-    { q: "Koji kontinent je ujedno i država?", answers: ["Australija", "Evropa", "Afrika", "Antarktik"], correct: 0 },
-    {q: "Koliko dana ima prestupna godina?", answers: ["364", "365", "366", "367"], correct: 2 }
+    {q: "Ko je naslikao Mona Lizu?", answers: ["Pikaso", "Van Gog", "Leonardo da Vinči", "Mikelanđelo"], correct: 2 }
 ];
+
+async function seedDatabase() {
+    try {
+        const count = await Question.countDocuments();
+        if (count === 0) {
+            console.log("Baza je prazna. Ubacujem početna pitanja...");
+            await Question.insertMany(fallbackQuestions);
+            console.log("Pitanja su uspešno ubačena!");
+        } else {
+            console.log(`Baza već sadrži ${count} pitanja.`);
+        }
+    } catch (error) {
+        console.error("Greška pri seedovanju baze:", error);
+    }
+}
 
 // Stanje igre
 const TOTAL_FIELDS = 32;
@@ -241,26 +75,51 @@ const PLAYER_COLORS = ['#ff00ea', '#00f3ff', '#39ff14', '#ffff4d']; // Prilagođ
 let gameState = {
     status: 'lobby', // lobby, playing, finished
     players: [], // { id, name, color, pos, startPos, totalSteps, active, connected, lastAnswerCorrect: false, isBot: false }
-    currentQuestionIndex: -1,
+    currentQuestionIndex: -1, // deprecated for DB but kept for compat
+    lastQuestionCorrect: 0, // Čuvamo tačan odgovor za trenutnu rundu
     answersReceivedThisRound: 0,
     roundTimer: null,
-    usedQuestions: []
+    usedQuestions: [] // Niz _id vrednosti iz MongoDB
 };
 
 let lobbyTimer = null;
 
 // Funkcije igre
-function getNextQuestion() {
-    if (gameState.usedQuestions.length >= questions.length) {
-        gameState.usedQuestions = []; // Reset ako ponestane
+async function getNextQuestion() {
+    try {
+        const totalDocs = await Question.countDocuments();
+        if (totalDocs === 0) {
+            // Fallback ako baza padne ili se izbriše
+            return fallbackQuestions[Math.floor(Math.random() * fallbackQuestions.length)];
+        }
+        
+        if (gameState.usedQuestions.length >= totalDocs) {
+            gameState.usedQuestions = [];
+        }
+        
+        const questionDoc = await Question.aggregate([
+            { $match: { _id: { $nin: gameState.usedQuestions } } },
+            { $sample: { size: 1 } }
+        ]);
+        
+        if (questionDoc.length === 0) {
+            gameState.usedQuestions = [];
+            return await getNextQuestion();
+        }
+        
+        const q = questionDoc[0];
+        gameState.usedQuestions.push(q._id);
+        
+        return {
+            q: q.q,
+            answers: q.answers,
+            correct: q.correct,
+            _id: q._id
+        };
+    } catch (err) {
+        console.error("Greška pri dohvatanju pitanja:", err);
+        return fallbackQuestions[0]; // Hitni fallback
     }
-    let qIndex;
-    do {
-        qIndex = Math.floor(Math.random() * questions.length);
-    } while (gameState.usedQuestions.includes(qIndex));
-    
-    gameState.usedQuestions.push(qIndex);
-    return questions[qIndex];
 }
 
 function startGame() {
@@ -274,6 +133,7 @@ function startGame() {
         p.totalSteps = 0;
         p.active = true;
         p.lastAnswerCorrect = false;
+        p.lastAnswerIndex = null;
     });
 
     io.emit('game_started', { players: gameState.players, totalFields: TOTAL_FIELDS });
@@ -295,6 +155,7 @@ function fillWithBotsAndStart() {
             active: true,
             connected: true,
             lastAnswerCorrect: false,
+            lastAnswerIndex: null,
             isBot: true
         });
     }
@@ -304,43 +165,56 @@ function fillWithBotsAndStart() {
     setTimeout(startGame, 3000);
 }
 
-function sendNextQuestion() {
+async function sendNextQuestion() {
     if (gameState.status !== 'playing') return;
 
     gameState.answersReceivedThisRound = 0;
-    gameState.players.forEach(p => p.lastAnswerCorrect = false);
-    
-    const questionObj = getNextQuestion();
-    gameState.currentQuestionIndex = questions.indexOf(questionObj);
-    
+    gameState.players.forEach(p => {
+        p.lastAnswerCorrect = false;
+        p.lastAnswerIndex = null;
+    });
+
+    const questionObj = await getNextQuestion();
+    gameState.lastQuestionCorrect = questionObj.correct; // Čuvamo tačan odgovor za proveru
+
     const questionToSend = {
         q: questionObj.q,
         answers: questionObj.answers,
-        timeLimit: 15
+        timeLimit: 15 // vraćeno na 15s za bržu igru
     };
-    
+
     io.emit('new_question', questionToSend);
-    
+
     // Botovi daju odgovore
     gameState.players.forEach(p => {
         if (p.isBot && p.active) {
-            const isCorrect = Math.random() > 0.5; // 50% sansa da bot pogodi
+            const isCorrect = Math.random() > 0.5; // 50% sansa
             const delay = Math.random() * 8000 + 2000; // bot odgovara izmedju 2. i 10. sekunde
-            
+
             setTimeout(() => {
                 if (gameState.status === 'playing' && p.active) {
                     p.lastAnswerCorrect = isCorrect;
+                    
+                    // Bot "bira" indeks
+                    if (isCorrect) {
+                        p.lastAnswerIndex = gameState.lastQuestionCorrect;
+                    } else {
+                        // Nasumičan pogrešan odgovor
+                        let wrongAnswers = [0,1,2,3].filter(idx => idx !== gameState.lastQuestionCorrect);
+                        p.lastAnswerIndex = wrongAnswers[Math.floor(Math.random() * wrongAnswers.length)];
+                    }
+
                     gameState.answersReceivedThisRound++;
                     checkRoundEnd();
                 }
             }, delay);
         }
     });
-    
-    // Tajmer na serveru
+
+    // Tajmer na serveru (15s + malo bafera)
     gameState.roundTimer = setTimeout(() => {
         processRoundResults();
-    }, 15000 + 1000); // 15 sekundi + 1s bafera za kašnjenje mreže
+    }, 15000 + 1000); 
 }
 
 function checkRoundEnd() {
@@ -357,16 +231,9 @@ function distance(start, end) {
 
 function processRoundResults() {
     clearTimeout(gameState.roundTimer);
-    
-    const results = gameState.players.map(p => ({
-        id: p.id,
-        name: p.name,
-        correct: p.lastAnswerCorrect,
-        wasActive: p.active
-    }));
-    
+
     const oldPositions = gameState.players.map(p => p.pos);
-    
+
     // Pomeranje
     gameState.players.forEach(p => {
         if (p.active && p.lastAnswerCorrect) {
@@ -374,7 +241,7 @@ function processRoundResults() {
             p.totalSteps += 1;
         }
     });
-    
+
     // Jedenje
     let eliminatedMessages = [];
     for (let i = 0; i < gameState.players.length; i++) {
@@ -391,7 +258,7 @@ function processRoundResults() {
             }
         }
     }
-    
+
     // Provera pobede
     let winners = [];
     gameState.players.forEach(p => {
@@ -399,21 +266,23 @@ function processRoundResults() {
             winners.push(p);
         }
     });
+
+    // Prikupljamo detaljne rezultate za prikaz boja klijentima
     const playerResults = gameState.players.map(p => ({
-    id: p.id,
-    name: p.name,
-    correct: p.lastAnswerCorrect,
-    wasActive: p.active,
-    // Ako je igrač odgovorio, šaljemo i njegov odgovor
-    answerIndex: p.lastAnswerIndex !== undefined ? p.lastAnswerIndex : null
-}));
+        id: p.id,
+        name: p.name,
+        correct: p.lastAnswerCorrect,
+        wasActive: p.active,
+        answerIndex: p.lastAnswerIndex !== undefined ? p.lastAnswerIndex : null
+    }));
+
     io.emit('round_results', {
         players: gameState.players,
-    correctAnswerIndex: questions[gameState.currentQuestionIndex].correct,
-    eliminatedMessages: eliminatedMessages,
-    playerResults: playerResults
+        correctAnswerIndex: gameState.lastQuestionCorrect,
+        eliminatedMessages: eliminatedMessages,
+        playerResults: playerResults
     });
-    
+
     if (winners.length > 0) {
         gameState.status = 'finished';
         if (winners.length === 1) {
@@ -423,7 +292,7 @@ function processRoundResults() {
         }
         return;
     }
-    
+
     const activePlayers = gameState.players.filter(p => p.active);
     if (activePlayers.length <= 1 && gameState.players.length > 1) {
         gameState.status = 'finished';
@@ -434,14 +303,14 @@ function processRoundResults() {
         }
         return;
     }
-    
-    setTimeout(sendNextQuestion, 8000);
+
+    setTimeout(sendNextQuestion, 8000); // 8 sekundi kašnjenja zbog klijentske animacije
 }
+
 // Provera da li ima živih ljudi u igri
 function checkForHumanPlayers() {
     const humanPlayers = gameState.players.filter(p => !p.isBot && p.connected);
     if (humanPlayers.length === 0 && gameState.status === 'playing') {
-        // Nema ljudi, resetuj igru
         clearTimeout(gameState.roundTimer);
         gameState.status = 'lobby';
         gameState.players = [];
@@ -452,8 +321,6 @@ function checkForHumanPlayers() {
         io.emit('game_reset', 'Igra je resetovana jer su svi igrači napustili.');
     }
 }
-
-// Proveri svakih 5 minuta
 setInterval(checkForHumanPlayers, 300000);
 
 // Socket.IO događaji
@@ -485,6 +352,7 @@ io.on('connection', (socket) => {
             active: true,
             connected: true,
             lastAnswerCorrect: false,
+            lastAnswerIndex: null,
             isBot: false
         };
         
@@ -492,7 +360,6 @@ io.on('connection', (socket) => {
         console.log(`${newPlayer.name} se pridružio igri.`);
         
         if (gameState.players.length === 1) {
-            // Prvi igrač ušao, pokrećemo tajmer od 3 minuta (180000 ms) za botove
             lobbyTimer = setTimeout(fillWithBotsAndStart, 180000);
         }
         
@@ -506,18 +373,19 @@ io.on('connection', (socket) => {
     });
 
     socket.on('submit_answer', (answerIndex) => {
-    if (gameState.status !== 'playing') return;
-    
-    const player = gameState.players.find(p => p.id === socket.id);
-    if (!player || !player.active) return;
-    
-    const correctAnswer = questions[gameState.currentQuestionIndex].correct;
-    player.lastAnswerCorrect = (answerIndex === correctAnswer);
-    player.lastAnswerIndex = answerIndex; // DODATO: pamti šta je igrač kliknuo
-    
-    gameState.answersReceivedThisRound++;
-    checkRoundEnd();
-
+        if (gameState.status !== 'playing') return;
+        
+        const player = gameState.players.find(p => p.id === socket.id);
+        if (!player || !player.active) return;
+        
+        // NOVO: provera prema gameState.lastQuestionCorrect (iz MongoDB) umesto iz niza
+        const correctAnswer = gameState.lastQuestionCorrect; 
+        
+        player.lastAnswerCorrect = (answerIndex === correctAnswer);
+        player.lastAnswerIndex = answerIndex; // pamti šta je igrač kliknuo
+        
+        gameState.answersReceivedThisRound++;
+        checkRoundEnd();
     });
 
     socket.on('disconnect', () => {
@@ -545,8 +413,21 @@ io.on('connection', (socket) => {
     });
 });
 
+// Admin ruta za dodavanje pitanja (koristi POST zahtev)
+app.post('/admin/add-questions', async (req, res) => {
+    try {
+        const questions = req.body;
+        if (!Array.isArray(questions)) {
+            return res.status(400).json({ error: 'Pošalji niz pitanja' });
+        }
+        const result = await Question.insertMany(questions);
+        res.json({ message: `Dodato ${result.length} pitanja`, ids: result.map(r => r._id) });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
     console.log(`Server radi na portu ${PORT}`);
-
 });
