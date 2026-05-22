@@ -322,11 +322,19 @@ function processRoundResults() {
             winners.push(p);
         }
     });
-    
+    const playerResults = gameState.players.map(p => ({
+    id: p.id,
+    name: p.name,
+    correct: p.lastAnswerCorrect,
+    wasActive: p.active,
+    // Ako je igrač odgovorio, šaljemo i njegov odgovor
+    answerIndex: p.lastAnswerIndex !== undefined ? p.lastAnswerIndex : null
+}));
     io.emit('round_results', {
         players: gameState.players,
-        correctAnswerIndex: questions[gameState.currentQuestionIndex].correct,
-        eliminatedMessages: eliminatedMessages
+    correctAnswerIndex: questions[gameState.currentQuestionIndex].correct,
+    eliminatedMessages: eliminatedMessages,
+    playerResults: playerResults
     });
     
     if (winners.length > 0) {
@@ -421,16 +429,18 @@ io.on('connection', (socket) => {
     });
 
     socket.on('submit_answer', (answerIndex) => {
-        if (gameState.status !== 'playing') return;
-        
-        const player = gameState.players.find(p => p.id === socket.id);
-        if (!player || !player.active) return;
-        
-        const correctAnswer = questions[gameState.currentQuestionIndex].correct;
-        player.lastAnswerCorrect = (answerIndex === correctAnswer);
-        
-        gameState.answersReceivedThisRound++;
-        checkRoundEnd();
+    if (gameState.status !== 'playing') return;
+    
+    const player = gameState.players.find(p => p.id === socket.id);
+    if (!player || !player.active) return;
+    
+    const correctAnswer = questions[gameState.currentQuestionIndex].correct;
+    player.lastAnswerCorrect = (answerIndex === correctAnswer);
+    player.lastAnswerIndex = answerIndex; // DODATO: pamti šta je igrač kliknuo
+    
+    gameState.answersReceivedThisRound++;
+    checkRoundEnd();
+
     });
 
     socket.on('disconnect', () => {

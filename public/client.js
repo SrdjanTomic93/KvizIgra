@@ -142,6 +142,24 @@ socket.on('round_results', (data) => {
     quizContainer.classList.add('hidden');
     animationStatus.classList.remove('hidden');
     
+    // ----- BOJENJE DUGMADI (NOVI DEO) -----
+    if (data.playerResults && data.correctAnswerIndex !== undefined) {
+        const myResult = data.playerResults.find(p => p.id === myPlayerId);
+        
+        answerBtns.forEach((btn, index) => {
+            btn.disabled = true;
+            btn.classList.remove('selected');
+            
+            if (index === data.correctAnswerIndex) {
+                btn.classList.add('correct');
+            }
+            if (myResult && !myResult.correct && index === myResult.answerIndex) {
+                btn.classList.add('wrong');
+            }
+        });
+    }
+    // ----- KRAJ NOVOG DELA -----
+    
     animTitle.innerText = "REZULTATI!";
     animTitle.className = "neon-text-blue";
     animMsg.innerHTML = "POMERANJE FIGURICA...<br>";

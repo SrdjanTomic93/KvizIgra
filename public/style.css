@@ -378,4 +378,20 @@ body {
     .quiz-panel {
         padding: 20px;
     }
+    .answer-btn.correct {
+    background-color: #4CAF50 !important;
+    border-color: #2E7D32 !important;
+    color: white !important;
+}
+
+.answer-btn.wrong {
+    background-color: #f44336 !important;
+    border-color: #C62828 !important;
+    color: white !important;
+}
+
+.answer-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
 }
