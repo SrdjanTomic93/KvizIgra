@@ -1,7 +1,5 @@
 const mongoose = require('mongoose');
-
-const MONGO_URI = 'mongodb+srv://SrkiTomic93:Dekadeka93@cluster0.zeyuaxo.mongodb.net/?appName=Cluster0';
-
+const MONGO_URI = 'mongodb://SrkiTomic93:Dekadeka93@cluster0-shard-00-00.zeyuaxo.mongodb.net:27017,cluster0-shard-00-01.zeyuaxo.mongodb.net:27017,cluster0-shard-00-02.zeyuaxo.mongodb.net:27017/?ssl=true&replicaSet=atlas-xxxxx&authSource=admin&retryWrites=true&w=majority&appName=Cluster0';
 const questionSchema = new mongoose.Schema({
     q: String,
     answers: [String],
