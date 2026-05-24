@@ -426,7 +426,18 @@ app.post('/admin/add-questions', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-
+// Force reset ruta - resetuje igru na zahtev
+app.get('/admin/reset', (req, res) => {
+    clearTimeout(gameState.roundTimer);
+    clearTimeout(lobbyTimer);
+    gameState.status = 'lobby';
+    gameState.players = [];
+    gameState.currentQuestionIndex = -1;
+    gameState.answersReceivedThisRound = 0;
+    gameState.usedQuestions = [];
+    io.emit('game_reset', 'Igra je resetovana od strane admina.');
+    res.json({ message: 'Igra je resetovana. Soba je prazna.' });
+});
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
     console.log(`Server radi na portu ${PORT}`);

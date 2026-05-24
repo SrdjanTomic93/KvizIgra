@@ -32,7 +32,7 @@ const answerBtns = [
 let myPlayerId = null;
 let amIActive = true;
 let TOTAL_FIELDS = 32;
-let RADIUS = 200; // Malo veći radijus za neon tablu
+let RADIUS = 200;
 let localTimer = null;
 
 // LOBI LOGIKA
@@ -59,7 +59,6 @@ socket.on('update_lobby', (data) => {
     playersList.innerHTML = '';
     data.players.forEach(p => {
         const li = document.createElement('li');
-        // Boja tačkice dodata direktno
         li.innerHTML = `<span class="color-dot" style="background:${p.color}; box-shadow: 0 0 10px ${p.color};"></span> ${p.name} ${p.id === socket.id ? '(TI)' : ''}`;
         playersList.appendChild(li);
         if (p.id === socket.id) myPlayerId = socket.id;
@@ -100,7 +99,7 @@ socket.on('new_question', (data) => {
     answerBtns.forEach((btn, index) => {
         btn.innerText = data.answers[index];
         btn.disabled = !amIActive;
-        btn.className = 'answer-btn neon-btn-blue'; // reset styles
+        btn.className = 'answer-btn neon-btn-blue';
         btn.onclick = () => submitAnswer(index, btn);
     });
     
@@ -140,7 +139,7 @@ function startLocalTimer(seconds) {
 socket.on('round_results', (data) => {
     clearInterval(localTimer);
     
-    // ----- BOJENJE DUGMADI (NOVI DEO) -----
+    // ----- BOJENJE DUGMADI -----
     if (data.playerResults && data.correctAnswerIndex !== undefined) {
         const myResult = data.playerResults.find(p => p.id === myPlayerId);
         
@@ -164,9 +163,8 @@ socket.on('round_results', (data) => {
             feedbackTextEl.className = 'feedback error-text';
         }
     }
-    // ----- KRAJ NOVOG DELA -----
+    // ----- KRAJ BOJENJA -----
 
-    // Čekamo 3 sekunde da igrači vide boje pre nego što sakrijemo kviz
     setTimeout(() => {
         quizContainer.classList.add('hidden');
         animationStatus.classList.remove('hidden');
@@ -246,7 +244,7 @@ function updatePiecePosition(player) {
     
     let offsetRadius = RADIUS;
     const idx = player.color.charCodeAt(1) % 3; 
-    offsetRadius += (idx - 1) * 12; // Malo veći offset zbog većih glow efekata
+    offsetRadius += (idx - 1) * 12;
     
     const x = Math.cos(angleRad) * offsetRadius;
     const y = Math.sin(angleRad) * offsetRadius;
@@ -264,3 +262,15 @@ function updateCenterStatus(players) {
         centerStatus.appendChild(div);
     });
 }
+
+// FORCE RESET FUNKCIJA
+function forceReset() {
+    fetch('/admin/reset');
+    setTimeout(() => location.reload(), 1000);
+}
+
+// Kad server pošalje game_reset, osveži stranicu
+socket.on('game_reset', (msg) => {
+    console.log(msg);
+    setTimeout(() => location.reload(), 2000);
+});
